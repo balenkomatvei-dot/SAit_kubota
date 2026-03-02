@@ -1,0 +1,1702 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Кубообразный потолок — визуализатор</title>
+  <style>
+    :root{
+      --bg:#f6f8fc;
+      --panel:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e6eaf2;
+      --shadow:0 14px 40px rgba(15,23,42,.10);
+      --shadow2:0 6px 18px rgba(15,23,42,.08);
+      --accent:#A50023;
+      --accent2:#d11a3f;
+      --good:#16a34a;
+      --bad:#dc2626;
+      --pill:#eef2ff;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:radial-gradient(900px 600px at 30% -10%, #ffffff 0%, var(--bg) 60%, #eef3ff 100%);
+      color:var(--text);
+      font:14px/1.35 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,"Noto Sans","Helvetica Neue",sans-serif;
+    }
+    .app{
+      height:100%;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+      padding:18px;
+    }
+    .app > .panel{order:2}
+    .app > .viewport{order:1}
+    .app > .panel{
+      display:flex;
+      flex-direction:column;
+      max-height:calc(100vh - 36px);
+      min-height:0;
+    }
+    @media (max-width: 980px){
+      .app{grid-template-columns:1fr; grid-template-rows:auto 1fr}
+      .app > .panel{order:1}
+      .app > .viewport{order:2}
+      .app > .panel{max-height:56vh}
+    }
+
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow2);
+      overflow:hidden;
+    }
+    .panel-header{
+      padding:16px 16px 12px 16px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg,#fff, #fbfcff);
+    }
+    .title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .title h1{
+      margin:0;
+      font-size:16px;
+      letter-spacing:-.2px;
+    }
+    .badge{
+      font-size:12px;
+      color:#1e293b;
+      background:var(--pill);
+      border:1px solid #dbe4ff;
+      padding:6px 10px;
+      border-radius:999px;
+      white-space:nowrap;
+    }
+    .subtitle{
+      margin:8px 0 0 0;
+      color:var(--muted);
+      font-size:12.5px;
+    }
+    .panel-body{
+      padding:14px 16px 16px 16px;
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      touch-action:pan-y;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .card{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .card h3{
+      margin:0 0 10px 0;
+      font-size:13px;
+      color:#111827;
+      letter-spacing:-.1px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .hint{color:var(--muted); font-size:12px}
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 110px;
+      gap:10px;
+      align-items:center;
+      margin:10px 0;
+    }
+    .row label{
+      color:#0f172a;
+      font-size:12.5px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    input[type="range"]{
+      width:100%;
+      height:18px;
+      accent-color:#A50023;
+      cursor:pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height:7px;
+      border-radius:999px;
+      background:linear-gradient(90deg, #c10b32, #A50023);
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      margin-top:-5px;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      border:2px solid #fff;
+      background:#A50023;
+      box-shadow:0 2px 8px rgba(165,0,35,.30);
+    }
+    input[type="number"]{
+      width:110px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:9px 10px;
+      outline:none;
+      font:inherit;
+      background:#fff;
+    }
+    select{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 10px;
+      background:#fff;
+      outline:none;
+      font:inherit;
+    }
+    .row2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      align-items:center;
+      margin-top:8px;
+    }
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    button{
+      border:1px solid var(--line);
+      background:#fff;
+      color:#0f172a;
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      box-shadow:0 2px 0 rgba(15,23,42,.02);
+      transition:transform .06s ease, box-shadow .2s ease, border-color .2s ease;
+      font:600 13px/1 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    }
+    button:hover{box-shadow:var(--shadow2); border-color:#d8deea}
+    button:active{transform:translateY(1px)}
+    .primary{
+      background:linear-gradient(180deg, #c10b32, #A50023);
+      color:#fff;
+      border-color:rgba(165,0,35,.25);
+      box-shadow:0 12px 24px rgba(165,0,35,.25);
+    }
+    .primary:hover{box-shadow:0 16px 32px rgba(165,0,35,.30)}
+    .ghost{ background:#fff; }
+    .wall-toggle{
+      border-color:rgba(165,0,35,.35);
+      background:linear-gradient(180deg, #b10027, #8f001f);
+      color:#fff;
+      box-shadow:0 10px 22px rgba(165,0,35,.25);
+    }
+    .wall-toggle:hover{box-shadow:0 14px 26px rgba(165,0,35,.35)}
+    .spec{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:6px;
+      font-size:12px;
+      color:#0f172a;
+    }
+    .kv{
+      display:grid;
+      grid-template-columns:minmax(0,1fr);
+      align-items:start;
+      gap:4px;
+      padding:8px 10px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fbfcff;
+    }
+    .kv span:first-child{
+      min-width:0;
+      overflow-wrap:anywhere;
+      line-height:1.25;
+    }
+    .kv span:last-child{color:#111827; font-weight:600; line-height:1.2}
+    .note{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .viewport{
+      position:relative;
+      min-height:520px;
+      background:#0b1220;
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid #e6eaf2;
+      box-shadow:var(--shadow);
+    }
+    @media (max-width: 980px){
+      .viewport{min-height:56vh}
+    }
+    canvas{display:block; width:100%; height:100%}
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background:radial-gradient(800px 500px at 30% 10%, rgba(255,255,255,.92), rgba(246,248,252,.82));
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .overlay.hidden{display:none}
+    .ov-card{
+      width:min(720px, 100%);
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .ov-card h2{
+      margin:0 0 8px 0;
+      font-size:16px;
+      letter-spacing:-.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .ov-card p{margin:6px 0; color:var(--muted)}
+    .mono{
+      margin-top:10px;
+      padding:12px;
+      background:#0b1220;
+      color:#e5e7eb;
+      border-radius:14px;
+      overflow:auto;
+      font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      max-height:220px;
+      border:1px solid rgba(255,255,255,.08);
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    .ov-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:10px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      background:#f1f5ff;
+      border:1px solid #dbe4ff;
+      border-radius:999px;
+      font-size:12px;
+      color:#1e293b;
+    }
+
+    .helpbar{
+      position:absolute;
+      left:14px;
+      bottom:14px;
+      right:14px;
+      display:none;
+      justify-content:space-between;
+      gap:10px;
+      pointer-events:none;
+    }
+    .helpbar .pill{pointer-events:none}
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="title">
+          <h1>Визуализатор кубообразного потолка</h1>
+          <div class="badge" id="statusBadge">Подготовка…</div>
+        </div>
+        <p class="subtitle">Управление: ЛКМ — вращение, колёсико — зум, ПКМ — панорама.</p>
+      </div>
+
+      <div class="panel-body">
+        <div class="grid">
+          <div class="card">
+            <h3>Параметры реек <span class="hint">мм</span></h3>
+
+            <div class="row">
+              <label for="railW">Ширина рейки</label>
+              <input id="railWNum" type="number" min="30" max="100" step="10" value="50" />
+            </div>
+            <input id="railW" type="range" min="30" max="100" step="10" value="50" />
+
+            <div class="row">
+              <label for="railH">Высота рейки</label>
+              <input id="railHNum" type="number" min="30" max="200" step="10" value="80" />
+            </div>
+            <input id="railH" type="range" min="30" max="200" step="10" value="80" />
+
+            <div class="row">
+              <label for="railGap">Зазор между рейками</label>
+              <input id="railGapNum" type="number" min="30" max="200" step="10" value="60" />
+            </div>
+            <input id="railGap" type="range" min="30" max="200" step="10" value="60" />
+
+            <div class="row2">
+              <div>
+                <label class="hint" style="display:block;margin-bottom:6px">Расположение</label>
+                <select id="orientation">
+                  <option value="x" selected>Вдоль помещения</option>
+                  <option value="z">Поперёк помещения</option>
+                </select>
+              </div>
+              <div>
+                <label class="hint" style="display:block;margin-bottom:6px">Цвет / декор</label>
+                <select id="color">
+                  <option value="ral9003" selected>Белый (RAL 9003)</option>
+                  <option value="ral9005">Чёрный (RAL 9005)</option>
+                  <option value="ral9006">Серебристый металлик (RAL 9006)</option>
+                  <option value="ral9006mat">Металлик матовый (RAL 9006 mat)</option>
+                  <option value="ral7024">Графит (RAL 7024)</option>
+                  <option value="honey">Honey Wood</option>
+                  <option value="whitewood">White Wood</option>
+                  <option value="cherry">Cherry Wood</option>
+                  <option value="golden">Golden Wood</option>
+                  <option value="antique">Antique Wood</option>
+                  <option value="choco">Choco Wood</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row2" style="margin-top:10px">
+              <div>
+                <label class="hint" style="display:block;margin-bottom:6px">Тип стеновой рейки</label>
+                <select id="wallType">
+                  <option value="open" selected>Открытый тип</option>
+                  <option value="closed">Закрытый тип</option>
+                  <option value="utk">УТК</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="btns">
+              <button id="btnCapsToggle" class="ghost">Заглушки: ВКЛ</button>
+              <button id="btnWallMode" class="wall-toggle">Стеновая рейка</button>
+              <button id="btnPng" class="primary">Скачать PNG</button>
+              <button id="btnReset" class="ghost">Сброс</button>
+              <button id="btnCopyLink" class="ghost">Скопировать ссылку</button>
+            </div>
+
+          </div>
+
+          <div class="card">
+            <h3>Калькулятор по площади <span class="hint">м²</span></h3>
+            <div class="row" style="margin-top:0">
+              <label for="areaInput">Площадь проекта</label>
+              <input id="areaInput" type="number" min="1" step="0.1" value="30" />
+            </div>
+            <div class="spec" id="spec"></div>
+            <div class="note">Расчёт оценочный: рейка/заглушка/соединитель считаются по текущим Ш×В и выбранному зазору.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewport panel">
+      <div class="overlay" id="overlay">
+        <div class="ov-card">
+          <h2>Запуск 3D… <span class="pill" id="ovPill">загрузка библиотек</span></h2>
+          <p id="ovText">Подключаю three.js. Если в сети блокируются CDN, включи офлайн‑режим.</p>
+          <div class="mono" id="log"></div>
+          <div class="ov-actions">
+            <button id="btnRetry" class="primary">Повторить</button>
+            <button id="btnCopyLog">Скопировать лог</button>
+          </div>
+          <div class="small">
+            Подсказка: если даже при наличии интернета блокируется CDN — положи <b>three.min.js</b> рядом с HTML и переключи <b>LOCAL_LIBS = true</b> внизу файла.
+          </div>
+        </div>
+      </div>
+
+      <div class="helpbar">
+        <div class="pill" id="fpsPill">FPS: —</div>
+        <div class="pill" id="dimsPill">Комната: —</div>
+      </div>
+
+      <canvas id="c"></canvas>
+    </div>
+  </div>
+
+<script>
+/* ===========================
+   Настройки подключения
+   =========================== */
+const LOCAL_LIBS = false; // <-- если CDN блокируются: положи three.min.js рядом и поставь true
+
+const THREE_CDN = [
+  "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js",
+  "https://unpkg.com/three@0.160.0/build/three.min.js",
+];
+
+// локальные пути (рядом с html)
+const THREE_LOCAL = ["./three.min.js"];
+
+/* ===========================
+   Логирование и перехват ошибок
+   =========================== */
+const overlay = document.getElementById("overlay");
+const logEl = document.getElementById("log");
+const ovText = document.getElementById("ovText");
+const ovPill = document.getElementById("ovPill");
+const statusBadge = document.getElementById("statusBadge");
+
+let LOG = [];
+function log(msg){
+  const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  LOG.push(line);
+  logEl.textContent = LOG.join("\n");
+}
+function setOverlay(mode, text){
+  ovPill.textContent = mode === "loading" ? "загрузка" : mode === "ok" ? "готово" : "ошибка";
+  ovPill.style.borderColor = mode === "error" ? "rgba(220,38,38,.25)" : "rgba(15,23,42,.12)";
+  ovPill.style.background = mode === "error" ? "#fff1f2" : mode === "ok" ? "#ecfdf5" : "#f1f5ff";
+  ovPill.style.color = mode === "error" ? "#991b1b" : mode === "ok" ? "#065f46" : "#1e293b";
+  if(text) ovText.innerHTML = text;
+}
+function showOverlay(){ overlay.classList.remove("hidden"); }
+function hideOverlay(){ overlay.classList.add("hidden"); }
+
+window.addEventListener("error", (e)=>{
+  log(`window.onerror: ${e.message} @ ${e.filename}:${e.lineno}:${e.colno}`);
+});
+window.addEventListener("unhandledrejection", (e)=>{
+  log(`unhandledrejection: ${String(e.reason || e)}`);
+});
+
+/* ===========================
+   Динамическая загрузка three.js
+   =========================== */
+function loadScript(url){
+  return new Promise((resolve,reject)=>{
+    const s = document.createElement("script");
+    s.src = url;
+    s.async = true;
+    s.onload = ()=>resolve(url);
+    s.onerror = ()=>reject(new Error("Failed to load: " + url));
+    document.head.appendChild(s);
+  });
+}
+
+async function loadThree(){
+  const urls = LOCAL_LIBS ? THREE_LOCAL : THREE_CDN;
+  let lastErr = null;
+  for(const u of urls){
+    try{
+      log(`Пробую загрузить: ${u}`);
+      await loadScript(u);
+      if(window.THREE){
+        log(`OK: three.js загружен (${u})`);
+        return u;
+      }else{
+        throw new Error("three.js загрузился, но window.THREE отсутствует");
+      }
+    }catch(err){
+      lastErr = err;
+      log(String(err.message || err));
+    }
+  }
+  throw lastErr || new Error("Не удалось загрузить three.js");
+}
+
+/* ===========================
+   Мини‑OrbitControls (без CDN)
+   =========================== */
+function makeMiniControls(camera, dom, opts){
+  const state = {
+    enabled: true,
+    target: (opts && opts.target) ? opts.target.clone() : new THREE.Vector3(0,0,0),
+    minDistance: (opts && opts.minDistance) ?? 0.6,
+    maxDistance: (opts && opts.maxDistance) ?? 12,
+    rotateSpeed: (opts && opts.rotateSpeed) ?? 1.0,
+    zoomSpeed: (opts && opts.zoomSpeed) ?? 1.0,
+    panSpeed: (opts && opts.panSpeed) ?? 1.0,
+    damping: (opts && opts.damping) ?? 0.14,
+    theta: 0,
+    phi: 0,
+    radius: 4,
+    pointers: new Map(),
+    last: {x:0,y:0},
+    mode: "rotate",
+  };
+
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+  function syncFromCamera(){
+    const offset = camera.position.clone().sub(state.target);
+    state.radius = offset.length();
+    state.theta = Math.atan2(offset.x, offset.z);
+    state.phi = Math.acos(clamp(offset.y / state.radius, -1, 1));
+  }
+
+  function applyToCamera(){
+    const phi = clamp(state.phi, 0.02, Math.PI - 0.02);
+    const r = clamp(state.radius, state.minDistance, state.maxDistance);
+    const sinPhi = Math.sin(phi);
+    const x = r * sinPhi * Math.sin(state.theta);
+    const y = r * Math.cos(phi);
+    const z = r * sinPhi * Math.cos(state.theta);
+    const desired = new THREE.Vector3(state.target.x + x, state.target.y + y, state.target.z + z);
+    camera.position.lerp(desired, state.damping);
+    camera.lookAt(state.target);
+  }
+
+  function pan(dx, dy){
+    const element = dom;
+    const offset = camera.position.clone().sub(state.target);
+    const targetDistance = offset.length();
+    const panX = (2 * dx * targetDistance / element.clientHeight) * state.panSpeed;
+    const panY = (2 * dy * targetDistance / element.clientHeight) * state.panSpeed;
+
+    const te = camera.matrix.elements;
+    const right = new THREE.Vector3(te[0], te[1], te[2]);
+    const up = new THREE.Vector3(te[4], te[5], te[6]);
+
+    right.multiplyScalar(-panX);
+    up.multiplyScalar(panY);
+
+    const panOffset = right.add(up);
+    state.target.add(panOffset);
+    camera.position.add(panOffset);
+  }
+
+  function onPointerDown(e){
+    if(!state.enabled) return;
+    dom.setPointerCapture(e.pointerId);
+    state.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    state.last.x = e.clientX; state.last.y = e.clientY;
+    const isPan = (e.button === 2) || e.shiftKey || e.ctrlKey || e.metaKey;
+    state.mode = isPan ? "pan" : "rotate";
+  }
+
+  function onPointerMove(e){
+    if(!state.enabled) return;
+    if(!state.pointers.has(e.pointerId)) return;
+    const prev = state.pointers.get(e.pointerId);
+    state.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+    const pointers = Array.from(state.pointers.values());
+    if(pointers.length === 2){
+      const [a,b] = pointers;
+      const dist = Math.hypot(a.x-b.x, a.y-b.y);
+      const prevDist = Math.hypot(prev.x-b.x, prev.y-b.y);
+      const delta = (prevDist - dist) * 0.002 * state.zoomSpeed;
+      state.radius = clamp(state.radius * (1 + delta), state.minDistance, state.maxDistance);
+
+      const midX = (a.x+b.x)/2, midY = (a.y+b.y)/2;
+      const dmx = midX - state.last.x;
+      const dmy = midY - state.last.y;
+      pan(dmx, dmy);
+      state.last.x = midX; state.last.y = midY;
+
+      applyToCamera();
+      return;
+    }
+
+    const dx = e.clientX - prev.x;
+    const dy = e.clientY - prev.y;
+
+    if(state.mode === "pan"){
+      pan(dx, dy);
+      applyToCamera();
+      return;
+    }
+
+    state.theta -= dx * 0.005 * state.rotateSpeed;
+    state.phi   -= dy * 0.005 * state.rotateSpeed;
+    applyToCamera();
+  }
+
+  function onPointerUp(e){ state.pointers.delete(e.pointerId); }
+
+  function onWheel(e){
+    if(!state.enabled) return;
+    e.preventDefault();
+    const delta = Math.sign(e.deltaY);
+    const factor = 1 + delta * 0.08 * state.zoomSpeed;
+    state.radius = clamp(state.radius * factor, state.minDistance, state.maxDistance);
+    applyToCamera();
+  }
+
+  function onContextMenu(e){ e.preventDefault(); }
+
+  dom.addEventListener("pointerdown", onPointerDown);
+  dom.addEventListener("pointermove", onPointerMove);
+  dom.addEventListener("pointerup", onPointerUp);
+  dom.addEventListener("pointercancel", onPointerUp);
+  dom.addEventListener("wheel", onWheel, {passive:false});
+  dom.addEventListener("contextmenu", onContextMenu);
+
+  syncFromCamera();
+  applyToCamera();
+
+  return { state, update: applyToCamera };
+}
+
+/* ===========================
+   Сцена
+   =========================== */
+const canvas = document.getElementById("c");
+
+const ui = {
+  railW: document.getElementById("railW"),
+  railWNum: document.getElementById("railWNum"),
+  railH: document.getElementById("railH"),
+  railHNum: document.getElementById("railHNum"),
+  railGap: document.getElementById("railGap"),
+  railGapNum: document.getElementById("railGapNum"),
+  orientation: document.getElementById("orientation"),
+  wallType: document.getElementById("wallType"),
+  color: document.getElementById("color"),
+  btnCapsToggle: document.getElementById("btnCapsToggle"),
+  btnWallMode: document.getElementById("btnWallMode"),
+  btnPng: document.getElementById("btnPng"),
+  btnReset: document.getElementById("btnReset"),
+  btnCopyLink: document.getElementById("btnCopyLink"),
+  btnRetry: document.getElementById("btnRetry"),
+  btnCopyLog: document.getElementById("btnCopyLog"),
+  fpsPill: document.getElementById("fpsPill"),
+  dimsPill: document.getElementById("dimsPill"),
+  areaInput: document.getElementById("areaInput"),
+  spec: document.getElementById("spec"),
+};
+
+const DEFAULTS = {
+  // Внутренние габариты помещения (мм)
+  roomW: 6800,
+  roomD: 4500,
+  roomH: 3500,
+
+  // Толщина стен/пола (мм)
+  wallT: 200,
+  floorT: 200,
+
+  // Верх реек фиксирован и находится ниже чернового потолка на этот опуск
+  drop: 150,
+
+  // Технологический зазор между рейками (мм)
+  gap: 60,
+
+  // Параметры по умолчанию
+  railW: 50,
+  railH: 80,
+  orient: "x",
+  mode: "ceiling",
+  wallType: "open",
+  caps: 1,
+  color: "ral9003",
+  area: 30,
+};
+
+let renderer, scene, camera, controls;
+let railsGroup, stringersGroup, studsGroup, roomGroup;
+let installMode = "ceiling";
+let showCaps = true;
+let lights = {};
+let lastFrameT = performance.now(), frames=0, fps=0;
+
+function mm(v){ return v * 0.001; }
+
+function parseQuery(){
+  const p = new URLSearchParams(location.search);
+  const v = (k, def) => p.has(k) ? p.get(k) : def;
+  return {
+    railW: clampInt(v("w", DEFAULTS.railW), 30, 100, 10),
+    railH: clampInt(v("h", DEFAULTS.railH), 30, 200, 10),
+    gap: clampInt(v("g", DEFAULTS.gap), 30, 200, 10),
+    orient: (v("o", DEFAULTS.orient) === "z") ? "z" : "x",
+    mode: (v("m", DEFAULTS.mode) === "wall") ? "wall" : "ceiling",
+    wallType: ["open","closed","utk"].includes(v("wt", DEFAULTS.wallType)) ? v("wt", DEFAULTS.wallType) : "open",
+    caps: v("cap", String(DEFAULTS.caps)) === "0" ? 0 : 1,
+    color: v("c", DEFAULTS.color),
+    area: Math.max(1, parseFloat(v("a", DEFAULTS.area))),
+  };
+}
+
+function updateCapsToggleUI(){
+  ui.btnCapsToggle.textContent = showCaps ? "Заглушки: ВКЛ" : "Заглушки: ВЫКЛ";
+  ui.btnCapsToggle.className = showCaps ? "primary" : "ghost";
+}
+
+function updateOrientationLabels(){
+  const toWall = installMode === "wall";
+  ui.orientation.options[0].textContent = toWall ? "Вдоль стены" : "Вдоль помещения";
+  ui.orientation.options[1].textContent = toWall ? "Поперёк стены" : "Поперёк помещения";
+  ui.btnWallMode.textContent = toWall ? "Стеновая рейка: ВКЛ" : "Стеновая рейка";
+  ui.btnWallMode.style.opacity = toWall ? "1" : "0.92";
+}
+
+function applyWallTypeUI(){
+  const active = installMode === "wall";
+  ui.wallType.disabled = !active;
+
+  if(active && ui.wallType.value === "closed"){
+    ui.railW.min = "40";
+    ui.railW.max = "50";
+    ui.railW.step = "10";
+    ui.railWNum.min = "40";
+    ui.railWNum.max = "50";
+    ui.railWNum.step = "10";
+    if(parseInt(ui.railW.value, 10) < 40 || parseInt(ui.railW.value, 10) > 50){
+      ui.railW.value = "40";
+      ui.railWNum.value = "40";
+    }
+
+    ui.railH.disabled = true;
+    ui.railHNum.disabled = true;
+  }else{
+    ui.railW.min = "30";
+    ui.railW.max = "100";
+    ui.railW.step = "10";
+    ui.railWNum.min = "30";
+    ui.railWNum.max = "100";
+    ui.railWNum.step = "10";
+    ui.railH.disabled = false;
+    ui.railHNum.disabled = false;
+  }
+}
+
+function setInstallMode(mode){
+  installMode = (mode === "wall") ? "wall" : "ceiling";
+  updateOrientationLabels();
+  applyWallTypeUI();
+}
+
+function applyCapsVisibility(){
+  if(!railsGroup) return;
+  railsGroup.traverse((obj)=>{
+    if(obj.userData?.isCap) obj.visible = showCaps;
+  });
+}
+
+function clampInt(x, min, max, step){
+  let n = parseInt(x, 10);
+  if(!Number.isFinite(n)) n = min;
+  n = Math.max(min, Math.min(max, n));
+  n = Math.round((n-min)/step)*step + min;
+  return n;
+}
+
+function setStatus(ok, text){
+  statusBadge.textContent = text || (ok ? "Готово" : "Ошибка");
+  statusBadge.style.background = ok ? "#ecfdf5" : "#fff1f2";
+  statusBadge.style.border = "1px solid " + (ok ? "rgba(22,163,74,.25)" : "rgba(220,38,38,.25)");
+  statusBadge.style.color = ok ? "#065f46" : "#991b1b";
+}
+
+function buildSpec(){
+  const roomW = DEFAULTS.roomW;
+  const roomD = DEFAULTS.roomD;
+  const railW = getRailW();
+  const railH = getRailH();
+  const gap = getGap();
+  const orient = ui.orientation.value;
+  const projectArea = Math.max(1, parseFloat(ui.areaInput.value) || DEFAULTS.area);
+  const roomWM = roomW / 1000;
+  const roomDM = roomD / 1000;
+  const baseArea = roomWM * roomDM;
+  const scale = Math.sqrt(projectArea / baseArea);
+  const scaledW = roomW * scale;
+  const scaledD = roomD * scale;
+
+  const span = (orient === "x") ? scaledD : scaledW;
+  const run = (orient === "x") ? scaledW : scaledD;
+  const railPitch = railW + gap;
+  let countRails = Math.floor((span + gap) / railPitch);
+  if(countRails < 1) countRails = 1;
+  const railLength = run;
+  const railPieceLen = 3000;
+  const railPiecesPerRail = Math.max(1, Math.ceil(railLength / railPieceLen));
+  const totalRailPieces = countRails * railPiecesPerRail;
+
+  const stringersByArea = Math.ceil(projectArea * 1.12);
+  const studsByArea = Math.ceil(projectArea * 1.23);
+
+  const kv = (k,v)=>`<div class="kv"><span>${k}</span><span>${v}</span></div>`;
+  ui.spec.innerHTML = [
+    kv(`Кубообразная рейка ${railW}×${railH} L=3000`, `${totalRailPieces} шт`),
+    kv("Стрингер для кубообразной рейки L=4000", `${stringersByArea} шт`),
+    kv("Шпильки M8", `${studsByArea} шт`),
+    kv(`Заглушки рейки ${railW}×${railH}`, "по проекту"),
+    kv("Соединители рейки", "по проекту"),
+    kv("Площадь проекта", `${projectArea.toFixed(1)} м²`),
+  ].join("");
+}
+
+function colorPreset(key){
+  const P = {
+    ral9003: {type:"metal", color:0xf3f4f6, metalness:.35, roughness:.55},
+    ral9005: {type:"metal", color:0x111111, metalness:.45, roughness:.55},
+    ral9006: {type:"metal", color:0xc7cbd1, metalness:.75, roughness:.35},
+    ral9006mat:{type:"metal", color:0xbfc5cc, metalness:.60, roughness:.60},
+    ral7024: {type:"metal", color:0x3b4251, metalness:.55, roughness:.55},
+    honey:   {type:"wood", base:"#d2a067", vein:"#7f4e22", tint:"#e0b177"},
+    whitewood:{type:"wood", base:"#d7c2a4", vein:"#8f6d4b", tint:"#e2d0b7"},
+    cherry:  {type:"wood", base:"#9f3f2f", vein:"#582012", tint:"#bf5640"},
+    golden:  {type:"wood", base:"#b88522", vein:"#614108", tint:"#d29c2c"},
+    antique: {type:"wood", base:"#9f7f53", vein:"#5d4220", tint:"#b18c5b"},
+    choco:   {type:"wood", base:"#4a2409", vein:"#251205", tint:"#5a2c0b"},
+  };
+  return P[key] || P.ral9003;
+}
+
+function makeWoodTexture(base, vein, tint){
+  const cnv = document.createElement("canvas");
+  cnv.width = 1024; cnv.height = 512;
+  const ctx = cnv.getContext("2d");
+
+  const grad = ctx.createLinearGradient(0, 0, cnv.width, 0);
+  grad.addColorStop(0, base);
+  grad.addColorStop(0.5, tint || base);
+  grad.addColorStop(1, base);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,cnv.width,cnv.height);
+
+  for(let i=0;i<320;i++){
+    const y = Math.random()*cnv.height;
+    const amp = 8 + Math.random()*26;
+    const freq = 0.004 + Math.random()*0.012;
+    ctx.strokeStyle = vein;
+    ctx.globalAlpha = 0.08 + Math.random()*0.22;
+    ctx.lineWidth = 0.8 + Math.random()*2.8;
+    ctx.beginPath();
+    for(let x=0;x<=cnv.width;x+=10){
+      const yy = y + Math.sin(x*freq)*amp + (Math.random()-0.5)*2;
+      if(x===0) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
+    }
+    ctx.stroke();
+  }
+
+  for(let i=0;i<120;i++){
+    const y = Math.random()*cnv.height;
+    ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(cnv.width, y + (Math.random()-0.5)*8);
+    ctx.stroke();
+  }
+
+  for(let i=0;i<18;i++){
+    const x = Math.random()*cnv.width;
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillRect(x,0,2+Math.random()*3,cnv.height);
+  }
+
+  ctx.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(cnv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1.4,0.9);
+  tex.anisotropy = 16;
+  return tex;
+}
+
+function showroomLight(){
+  return {amb:0.7, hemi:0.65, dir:2.05, dirColor:0xffffff, fill:1.15, fillColor:0xe1f4ff, back:0.65, backColor:0xffffff};
+}
+
+function getRailW(){ return clampInt(ui.railW.value, 30, 100, 10); }
+function getRailH(){ return clampInt(ui.railH.value, 30, 200, 10); }
+function getGap(){ return clampInt(ui.railGap.value, 30, 200, 10); }
+
+function syncInputs(){
+  ui.railWNum.value = ui.railW.value;
+  ui.railHNum.value = ui.railH.value;
+  ui.railGapNum.value = ui.railGap.value;
+  if(!ui.areaInput.value) ui.areaInput.value = String(DEFAULTS.area);
+}
+
+function bindInputs(){
+  function link(rangeEl, numEl, min, max, step, onChange){
+    const clamp = (v)=>clampInt(v, min, max, step);
+
+    rangeEl.addEventListener("input", ()=>{
+      const v = clamp(rangeEl.value);
+      rangeEl.value = v;
+      numEl.value = v;
+      onChange();
+    });
+
+    numEl.addEventListener("input", ()=>{
+      const v = clamp(numEl.value);
+      rangeEl.value = v;
+      numEl.value = v;
+      onChange();
+    });
+  }
+
+  link(ui.railW, ui.railWNum, 30, 100, 10, ()=>{ rebuildRails(); updateUrl(); buildSpec(); });
+  link(ui.railH, ui.railHNum, 30, 200, 10, ()=>{ rebuildRails(); updateUrl(); buildSpec(); });
+  link(ui.railGap, ui.railGapNum, 30, 200, 10, ()=>{ rebuildRails(); updateUrl(); buildSpec(); });
+
+  ui.orientation.addEventListener("change", ()=>{ rebuildAll(); updateUrl(); buildSpec(); });
+  ui.wallType.addEventListener("change", ()=>{ applyWallTypeUI(); rebuildAll(); updateUrl(); buildSpec(); });
+  ui.color.addEventListener("change", ()=>{ applyMaterials(); updateUrl(); });
+  ui.areaInput.addEventListener("input", ()=>{ buildSpec(); updateUrl(); });
+  ui.btnCapsToggle.addEventListener("click", ()=>{
+    showCaps = !showCaps;
+    updateCapsToggleUI();
+    applyCapsVisibility();
+    updateUrl();
+  });
+  ui.btnWallMode.addEventListener("click", ()=>{
+    setInstallMode(installMode === "ceiling" ? "wall" : "ceiling");
+    rebuildAll();
+    updateUrl();
+  });
+
+  ui.btnReset.addEventListener("click", ()=>{
+    applyState(DEFAULTS, true);
+    rebuildAll();
+    applyLights();
+    applyMaterials();
+    resetCamera();
+    updateUrl(true);
+    buildSpec();
+  });
+
+  ui.btnPng.addEventListener("click", downloadPNG);
+  ui.btnCopyLink.addEventListener("click", copyLink);
+
+  ui.btnRetry.addEventListener("click", ()=>start(true));
+  ui.btnCopyLog.addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(LOG.join("\n"));
+      log("Лог скопирован в буфер обмена.");
+    }catch(e){
+      log("Не удалось скопировать лог: " + String(e));
+    }
+  });
+}
+
+function applyState(state, force=false){
+  ui.railW.value = state.railW;
+  ui.railWNum.value = state.railW;
+  ui.railH.value = state.railH;
+  ui.railHNum.value = state.railH;
+  ui.railGap.value = state.gap;
+  ui.railGapNum.value = state.gap;
+  ui.orientation.value = state.orient;
+  ui.wallType.value = state.wallType;
+  setInstallMode(state.mode);
+  showCaps = !!state.caps;
+  updateCapsToggleUI();
+  if(force || Array.from(ui.color.options).some(o=>o.value===state.color)) ui.color.value = state.color;
+  ui.areaInput.value = state.area;
+}
+
+function updateUrl(replace=false){
+  const p = new URLSearchParams();
+  p.set("w", getRailW());
+  p.set("h", getRailH());
+  p.set("g", getGap());
+  p.set("o", ui.orientation.value);
+  p.set("m", installMode);
+  p.set("wt", ui.wallType.value);
+  p.set("cap", showCaps ? "1" : "0");
+  p.set("c", ui.color.value);
+  p.set("a", Math.max(1, parseFloat(ui.areaInput.value) || DEFAULTS.area));
+  const newUrl = location.pathname + "?" + p.toString();
+  history.replaceState({}, "", newUrl);
+}
+
+async function copyLink(){
+  try{
+    await navigator.clipboard.writeText(location.href);
+    statusBadge.textContent = "Ссылка скопирована";
+    setTimeout(()=>setStatus(true, "Готово"), 900);
+  }catch(e){
+    log("Не удалось скопировать ссылку: " + String(e));
+    alert("Не удалось скопировать ссылку. Можно скопировать вручную из адресной строки.");
+  }
+}
+
+function drawBrandWatermark(ctx, w, h){
+  const pad = Math.max(20, Math.round(w * 0.02));
+  const y = h - pad;
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = '#A50023';
+  ctx.fillRect(pad, y - 8, Math.min(420, w * 0.35), 6);
+  ctx.restore();
+}
+
+function downloadPNG(){
+  try{
+    renderer.render(scene, camera);
+    const wmCanvas = document.createElement('canvas');
+    wmCanvas.width = canvas.width;
+    wmCanvas.height = canvas.height;
+    const wctx = wmCanvas.getContext('2d');
+    wctx.drawImage(canvas, 0, 0, wmCanvas.width, wmCanvas.height);
+    drawBrandWatermark(wctx, wmCanvas.width, wmCanvas.height);
+
+    wmCanvas.toBlob((blob)=>{
+      if(!blob){
+        const url = wmCanvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "cubo-ceiling.png";
+        a.click();
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "cubo-ceiling.png";
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 1500);
+    }, "image/png");
+  }catch(e){
+    log("PNG export error: " + String(e));
+    alert("Не удалось сохранить PNG. Скопируй лог и пришли мне — я поправлю под твой браузер.");
+  }
+}
+
+/* ===========================
+   Построение геометрии
+   =========================== */
+function buildRoom(){
+  const roomW = mm(DEFAULTS.roomW);
+  const roomD = mm(DEFAULTS.roomD);
+  const roomH = mm(DEFAULTS.roomH);
+  const wallT = mm(DEFAULTS.wallT);
+  const floorT = mm(DEFAULTS.floorT);
+
+  roomGroup = new THREE.Group();
+
+  // Пол (плита толщиной 200 мм)
+  const floorMat = new THREE.MeshStandardMaterial({color:0xe3e3e3, roughness:0.94, metalness:0.0});
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(roomW + wallT, floorT, roomD + wallT), floorMat);
+  floor.position.set(-wallT/2, -floorT/2, -wallT/2);
+  floor.receiveShadow = true;
+  roomGroup.add(floor);
+
+  // Черновой потолок (плоскость)
+  const ceilMat = new THREE.MeshStandardMaterial({color:0xf8fafc, roughness:1, metalness:0});
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), ceilMat);
+  ceil.rotation.x = Math.PI/2;
+  ceil.position.set(0, roomH, 0);
+  roomGroup.add(ceil);
+
+  // Стены (две штуки) толщиной 200 мм
+  const wallMat = new THREE.MeshStandardMaterial({
+    color:0xf8fafc,
+    roughness:0.98,
+    metalness:0,
+    transparent:true,
+    opacity:1.0
+  });
+
+  // Левая стена (по X-), внутренней гранью стоит в x = -roomW/2
+  const wall1 = new THREE.Mesh(new THREE.BoxGeometry(wallT, roomH, roomD + wallT), wallMat.clone());
+  wall1.position.set(-roomW/2 - wallT/2, roomH/2, -wallT/2);
+  wall1.castShadow = true;
+  wall1.receiveShadow = true;
+  roomGroup.add(wall1);
+
+  // Задняя стена (по Z-), внутренней гранью стоит в z = -roomD/2
+  const wall2 = new THREE.Mesh(new THREE.BoxGeometry(roomW + wallT, roomH, wallT), wallMat.clone());
+  wall2.position.set(-wallT/2, roomH/2, -roomD/2 - wallT/2);
+  wall2.castShadow = true;
+  wall2.receiveShadow = true;
+  roomGroup.add(wall2);
+
+  roomGroup.userData.walls = [wall1, wall2];
+  scene.add(roomGroup);
+
+  ui.dimsPill.textContent = `Комната: ${DEFAULTS.roomW}×${DEFAULTS.roomD}×${DEFAULTS.roomH} мм`;
+}
+
+function buildStringers(){
+  if(stringersGroup) scene.remove(stringersGroup);
+  stringersGroup = new THREE.Group();
+  if(studsGroup) scene.remove(studsGroup);
+  if(installMode === "wall"){
+    if(ui.wallType.value !== "closed") return;
+
+    const roomW = DEFAULTS.roomW, roomD = DEFAULTS.roomD;
+    const mat = new THREE.MeshStandardMaterial({color:0x1f2937, roughness:.72, metalness:.18});
+    const sh = 35, sw = 20;
+    const geo = new THREE.BoxGeometry(mm(roomW), mm(sh), mm(sw));
+    const wallSurfaceZ = mm(-roomD/2);
+    const stringerZ = wallSurfaceZ + mm(sw/2 + 1);
+    // Несколько стрингеров: 300 мм от пола и далее шаг 1200 мм до верха стены
+    for(let y=300; y <= DEFAULTS.roomH - 100; y += 1200){
+      const s = new THREE.Mesh(geo, mat);
+      s.position.set(0, mm(y), stringerZ);
+      s.castShadow = true;
+      stringersGroup.add(s);
+    }
+    scene.add(stringersGroup);
+    return;
+  }
+
+  const roomW = DEFAULTS.roomW, roomD = DEFAULTS.roomD, roomH = DEFAULTS.roomH;
+  const orient = ui.orientation.value;
+
+  const sh = 35, sw = 20;
+  const mat = new THREE.MeshStandardMaterial({color:0x111827, roughness:.75, metalness:.12});
+
+  // Стрингеры идут ПОПЕРЁК реек:
+  // orient = x -> рейки вдоль X, стрингеры вдоль Z
+  // orient = z -> рейки вдоль Z, стрингеры вдоль X
+  const crossSpan = (orient === "x") ? roomW : roomD;      // ось, вдоль которой раскладываем стрингеры
+  const stringerLen = (orient === "x") ? roomD : roomW;   // длина стрингера
+
+  const positions = [];
+  for(let pos=300; pos <= crossSpan-200; pos += 1200) positions.push(pos);
+
+  const studLen = mm(200);
+  const stringerTopY = mm(roomH) - studLen;
+  const y = stringerTopY - mm(sh)/2;
+
+  for(const p of positions){
+    let geo, m;
+    if(orient === "x"){
+      // вдоль Z
+      geo = new THREE.BoxGeometry(mm(sw), mm(sh), mm(stringerLen));
+      m = new THREE.Mesh(geo, mat);
+      m.position.set(mm(-roomW/2 + p), y, 0);
+    }else{
+      // вдоль X
+      geo = new THREE.BoxGeometry(mm(stringerLen), mm(sh), mm(sw));
+      m = new THREE.Mesh(geo, mat);
+      m.position.set(0, y, mm(-roomD/2 + p));
+    }
+    m.castShadow = true;
+    stringersGroup.add(m);
+  }
+  scene.add(stringersGroup);
+  buildStuds(positions, stringerTopY, orient);
+}
+
+function buildStuds(stringerPositions, stringerTopY, orient){
+  if(studsGroup) scene.remove(studsGroup);
+  studsGroup = new THREE.Group();
+
+  const roomW = DEFAULTS.roomW;
+  const roomD = DEFAULTS.roomD;
+  const studLen = mm(200);
+  const studR = mm(4);
+  const mat = new THREE.MeshStandardMaterial({color:0xcfd6df, roughness:0.35, metalness:0.85});
+  const geo = new THREE.CylinderGeometry(studR, studR, studLen, 16);
+
+  const runSpan = (orient === "x") ? roomD : roomW;
+  const runPositions = [];
+  for(let pos=300; pos <= runSpan-200; pos += 1200) runPositions.push(pos);
+
+  const centerY = stringerTopY + studLen/2;
+
+  for(const crossPos of stringerPositions){
+    for(const runPos of runPositions){
+      const stud = new THREE.Mesh(geo, mat);
+      if(orient === "x"){
+        stud.position.set(mm(-roomW/2 + crossPos), centerY, mm(-roomD/2 + runPos));
+      }else{
+        stud.position.set(mm(-roomW/2 + runPos), centerY, mm(-roomD/2 + crossPos));
+      }
+      studsGroup.add(stud);
+    }
+  }
+
+  scene.add(studsGroup);
+}
+
+
+function buildRails(){
+  if(railsGroup) scene.remove(railsGroup);
+  railsGroup = new THREE.Group();
+
+  const roomW = DEFAULTS.roomW, roomD = DEFAULTS.roomD, roomH = DEFAULTS.roomH;
+  const gap = getGap();
+  const orient = ui.orientation.value;
+  const railW = getRailW();
+  const railH = getRailH();
+
+  if(installMode === "wall"){
+    if(ui.wallType.value === "closed"){
+      const length = (orient === "x") ? roomW : roomH;
+      const span = (orient === "x") ? roomH : roomW;
+      const wallSurfaceZ = mm(-roomD/2);
+      const wallZ = wallSurfaceZ + mm(20 + 2 + 6);
+      const mainH = 20;
+      const revH = 60;
+      const mainW = railW;
+      const revW = railW;
+      const module = mainW + revW;
+      let countModules = Math.max(1, Math.floor(span / module));
+      const total = countModules * module;
+      const start = (span - total)/2;
+
+      const matMain = makeRailMaterial();
+      const matRev = makeRailMaterial();
+
+      for(let i=0;i<countModules;i++){
+        const base = start + i*module;
+        const main = makeOpenCRail(length, mainW, mainH, orient === "x" ? "x" : "z", matMain);
+        addRailCaps(main, length, mainW, mainH, orient === "x" ? "x" : "z", matMain);
+        const rev = makeReverseWallRail(length, revW, revH, orient === "x" ? "x" : "z", matRev);
+        addRailCaps(rev, length, revW, revH, orient === "x" ? "x" : "z", matRev);
+
+        main.rotation.x = -Math.PI/2;
+        // Обратный профиль: в ту же плоскость по полой стороне, без разворота вглубь стены.
+        rev.rotation.x = -Math.PI/2;
+
+        if(orient === "x"){
+          main.position.set(0, mm(base + mainW/2), wallZ);
+          rev.position.set(0, mm(base + mainW + revW/2), wallZ);
+        }else{
+          main.position.set(mm(-roomW/2 + base + mainW/2), mm(roomH/2), wallZ);
+          rev.position.set(mm(-roomW/2 + base + mainW + revW/2), mm(roomH/2), wallZ);
+        }
+
+        railsGroup.add(main, rev);
+      }
+
+      scene.add(railsGroup);
+      applyCapsVisibility();
+      return;
+    }
+
+    const length = (orient === "x") ? roomW : roomH;
+    const span = (orient === "x") ? roomH : roomW;
+    const pitch = railW + gap;
+    let count = Math.floor((span + gap) / pitch);
+    if(count < 1) count = 1;
+    const coverage = count*railW + (count-1)*gap;
+    const mat = makeRailMaterial();
+    const wallZ = mm(-roomD/2 + railW/2 + 1);
+
+    for(let i=0;i<count;i++){
+      const profileOrient = orient === "x" ? "x" : "z";
+      const rail = makeOpenCRail(length, railW, railH, profileOrient, mat);
+      addRailCaps(rail, length, railW, railH, profileOrient, mat);
+      rail.rotation.x = -Math.PI/2;
+      if(orient === "x"){
+        const y = mm((roomH - coverage)/2 + railW/2 + i*pitch);
+        rail.position.set(0, y, wallZ);
+      }else{
+        const x = mm(-roomW/2 + (roomW - coverage)/2 + railW/2 + i*pitch);
+        rail.position.set(x, mm(roomH/2), wallZ);
+      }
+      railsGroup.add(rail);
+    }
+
+    scene.add(railsGroup);
+    applyCapsVisibility();
+    return;
+  }
+
+  // Рейки опускаются на ту же величину, что и стрингеры.
+  // Сохраняем монтажный отступ: верх стрингера на 45 мм выше верха рейки.
+  const stringerTopY = mm(roomH) - mm(200);
+  const railTopY = stringerTopY - mm(45);
+
+  // Раскладка: orient=x -> рейки вдоль X и раскладываются по Z (span=roomD)
+  //            orient=z -> рейки вдоль Z и раскладываются по X (span=roomW)
+  const span = (orient === "x") ? roomD : roomW;
+  const length = (orient === "x") ? roomW : roomD;
+
+  const pitch = railW + gap;
+  let count = Math.floor((span + gap) / pitch);
+  if(count < 1) count = 1;
+
+  const coverage = count*railW + (count-1)*gap;
+  const start = -coverage/2 + railW/2;
+
+  const mat = makeRailMaterial();
+
+  for(let i=0;i<count;i++){
+    const rail = makeOpenCRail(length, railW, railH, orient, mat);
+    addRailCaps(rail, length, railW, railH, orient, mat);
+
+    // Верх рейки фиксирован — растёт только вниз
+    rail.position.y = railTopY;
+
+    const p = start + i*pitch;
+    if(orient === "x"){
+      rail.position.z = mm(p);
+      rail.position.x = 0;
+    }else{
+      rail.position.x = mm(p);
+      rail.position.z = 0;
+    }
+
+    railsGroup.add(rail);
+  }
+
+  scene.add(railsGroup);
+  applyCapsVisibility();
+}
+
+// С‑образная (канальная) рейка: верх открыт.
+// По требованию: при ширине 100 мм сверху пустота 90 мм (две полки по 5 мм).
+function makeOpenCRail(length, railW, railH, orient, mat){
+  const L = mm(length);
+  const W = mm(railW);
+  const H = mm(railH);
+
+  const metalT = mm(2);    // визуальная толщина металла
+  const flange = mm(5);    // «полки» по 5 мм сверху
+
+  const g = new THREE.Group();
+
+  if(orient === "x"){
+    // длина вдоль X, ширина по Z
+    const sideGeo = new THREE.BoxGeometry(L, H, metalT);
+    const botGeo  = new THREE.BoxGeometry(L, metalT, W);
+    const flW = Math.min(flange, W/2 - metalT);
+    const flGeo   = new THREE.BoxGeometry(L, metalT, flW);
+
+    const left = new THREE.Mesh(sideGeo, mat);
+    left.position.set(0, -H/2, -W/2 + metalT/2);
+
+    const right = new THREE.Mesh(sideGeo, mat);
+    right.position.set(0, -H/2,  W/2 - metalT/2);
+
+    const bot = new THREE.Mesh(botGeo, mat);
+    bot.position.set(0, -H + metalT/2, 0);
+
+    const fL = new THREE.Mesh(flGeo, mat);
+    fL.position.set(0, -metalT/2, -W/2 + flW/2);
+
+    const fR = new THREE.Mesh(flGeo, mat);
+    fR.position.set(0, -metalT/2,  W/2 - flW/2);
+
+    for(const m of [left,right,bot,fL,fR]){ m.castShadow = true; g.add(m); }
+  }else{
+    // длина вдоль Z, ширина по X
+    const sideGeo = new THREE.BoxGeometry(metalT, H, L);
+    const botGeo  = new THREE.BoxGeometry(W, metalT, L);
+    const flW = Math.min(flange, W/2 - metalT);
+    const flGeo   = new THREE.BoxGeometry(flW, metalT, L);
+
+    const left = new THREE.Mesh(sideGeo, mat);
+    left.position.set(-W/2 + metalT/2, -H/2, 0);
+
+    const right = new THREE.Mesh(sideGeo, mat);
+    right.position.set( W/2 - metalT/2, -H/2, 0);
+
+    const bot = new THREE.Mesh(botGeo, mat);
+    bot.position.set(0, -H + metalT/2, 0);
+
+    const fL = new THREE.Mesh(flGeo, mat);
+    fL.position.set(-W/2 + flW/2, -metalT/2, 0);
+
+    const fR = new THREE.Mesh(flGeo, mat);
+    fR.position.set( W/2 - flW/2, -metalT/2, 0);
+
+    for(const m of [left,right,bot,fL,fR]){ m.castShadow = true; g.add(m); }
+  }
+
+  return g;
+}
+
+function makeReverseWallRail(length, railW, railH, orient, mat){
+  const L = mm(length);
+  const W = mm(railW);
+  const H = mm(railH);
+  const metalT = mm(2);
+  const flange = mm(5);
+  const g = new THREE.Group();
+
+  if(orient === "x"){
+    const sideGeo = new THREE.BoxGeometry(L, H, metalT);
+    const backGeo = new THREE.BoxGeometry(L, metalT, W);
+    const flGeo = new THREE.BoxGeometry(L, metalT, Math.min(mm(5), W/2 - metalT));
+
+    const left = new THREE.Mesh(sideGeo, mat); left.position.set(0, -H/2, -W/2 + metalT/2);
+    const right = new THREE.Mesh(sideGeo, mat); right.position.set(0, -H/2, W/2 - metalT/2);
+    const back = new THREE.Mesh(backGeo, mat); back.position.set(0, -H + metalT/2, 0);
+    const flL = new THREE.Mesh(flGeo, mat); flL.position.set(0, -H + metalT/2, -W/2 + flange/2);
+    const flR = new THREE.Mesh(flGeo, mat); flR.position.set(0, -H + metalT/2, W/2 - flange/2);
+    for(const m of [left,right,back,flL,flR]){ m.castShadow = true; g.add(m); }
+  }else{
+    const sideGeo = new THREE.BoxGeometry(metalT, H, L);
+    const backGeo = new THREE.BoxGeometry(W, metalT, L);
+    const flGeo = new THREE.BoxGeometry(Math.min(mm(5), W/2 - metalT), metalT, L);
+
+    const left = new THREE.Mesh(sideGeo, mat); left.position.set(-W/2 + metalT/2, -H/2, 0);
+    const right = new THREE.Mesh(sideGeo, mat); right.position.set(W/2 - metalT/2, -H/2, 0);
+    const back = new THREE.Mesh(backGeo, mat); back.position.set(0, -H + metalT/2, 0);
+    const flL = new THREE.Mesh(flGeo, mat); flL.position.set(-W/2 + flange/2, -H + metalT/2, 0);
+    const flR = new THREE.Mesh(flGeo, mat); flR.position.set(W/2 - flange/2, -H + metalT/2, 0);
+    for(const m of [left,right,back,flL,flR]){ m.castShadow = true; g.add(m); }
+  }
+  return g;
+}
+
+function addRailCaps(rail, length, railW, railH, orient, mat){
+  const capLen = mm(10);
+  const protrude = mm(2.5);
+  const L = mm(length);
+  const W = mm(railW + 2);
+  const H = mm(railH + 2);
+
+  const capGeo = orient === "x"
+    ? new THREE.BoxGeometry(capLen, H, W)
+    : new THREE.BoxGeometry(W, H, capLen);
+  capGeo.translate(0, -H/2, 0);
+
+  const d = Math.max(0, L/2 - capLen/2 + protrude);
+  const capA = new THREE.Mesh(capGeo, mat);
+  const capB = new THREE.Mesh(capGeo, mat);
+  capA.userData.isCap = true;
+  capB.userData.isCap = true;
+  capA.castShadow = capB.castShadow = true;
+
+  if(orient === "x"){
+    capA.position.set(-d, 0, 0);
+    capB.position.set(d, 0, 0);
+  }else{
+    capA.position.set(0, 0, -d);
+    capB.position.set(0, 0, d);
+  }
+
+  rail.add(capA, capB);
+}
+
+function makeRailMaterial(){
+  const p = colorPreset(ui.color.value);
+  if(p.type === "wood"){
+    const tex = makeWoodTexture(p.base, p.vein, p.tint);
+    return new THREE.MeshPhysicalMaterial({
+      map: tex,
+      bumpMap: tex,
+      bumpScale: 0.05,
+      roughness: 0.62,
+      metalness: 0.02,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.65,
+    });
+  }
+  return new THREE.MeshStandardMaterial({ color: p.color, metalness: p.metalness, roughness: p.roughness });
+}
+
+function applyMaterials(){
+  if(!railsGroup) return;
+  const mat = makeRailMaterial();
+  railsGroup.traverse(obj=>{
+    if(obj.isMesh){
+      obj.material = mat;
+    }
+  });
+}
+
+function applyLights(){
+  if(!lights.ambient) return;
+  const lp = showroomLight();
+  lights.ambient.intensity = lp.amb;
+  lights.hemi.intensity = lp.hemi;
+  lights.key.intensity = lp.dir;
+  lights.key.color.setHex(lp.dirColor);
+  lights.fill.intensity = lp.fill;
+  lights.fill.color.setHex(lp.fillColor);
+  lights.back.intensity = lp.back;
+  lights.back.color.setHex(lp.backColor);
+}
+
+function rebuildRails(){ buildRails(); }
+function rebuildAll(){ buildRails(); buildStringers(); buildSpec(); }
+
+function resetCamera(){
+  const roomW = mm(DEFAULTS.roomW), roomD = mm(DEFAULTS.roomD), roomH = mm(DEFAULTS.roomH);
+  const railTopY = installMode === "wall"
+    ? mm(DEFAULTS.roomH/2)
+    : (mm(DEFAULTS.roomH) - mm(200)) - mm(45);
+
+  // Стартовая камера: сбоку + сверху + чуть под углом
+  camera.position.set(roomW*1.28, roomH*0.72, roomD*0.58);
+  controls.state.target.set(0, railTopY - mm(120), 0);
+  controls.update();
+}
+
+function updateWallTransparency(){
+  if(!roomGroup?.userData?.walls) return;
+  const [wallX, wallZ] = roomGroup.userData.walls;
+  const pos = camera.position;
+  const roomW = mm(DEFAULTS.roomW), roomD = mm(DEFAULTS.roomD);
+  const xPlane = -roomW/2;
+  const zPlane = -roomD/2;
+  // Как только камера уходит «за стену» (выходит за внутреннюю грань) — делаем стену полупрозрачной
+  wallX.material.opacity = pos.x < (xPlane - mm(20)) ? 0.08 : 1.0;
+  wallZ.material.opacity = pos.z < (zPlane - mm(20)) ? 0.08 : 1.0;
+}
+
+function resize(){
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  const need = canvas.width !== Math.floor(w*devicePixelRatio) || canvas.height !== Math.floor(h*devicePixelRatio);
+  if(!need) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+async function initThree(){
+  LOG = [];
+  logEl.textContent = "";
+  showOverlay();
+  setOverlay("loading", "Подключаю <b>three.js</b>…");
+
+  try{
+    const src = await loadThree();
+    setOverlay("loading", "Инициализирую сцену…");
+    log("THREE version: " + (THREE.REVISION || "unknown"));
+    log("Loaded from: " + src);
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, preserveDrawingBuffer:true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.VSMShadowMap;
+
+    scene = new THREE.Scene();
+    scene.background = null;
+
+    camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.05, 80);
+
+    lights.ambient = new THREE.AmbientLight(0xffffff, 0.55);
+    scene.add(lights.ambient);
+
+    lights.hemi = new THREE.HemisphereLight(0xffffff, 0xdbeafe, 0.55);
+    lights.hemi.position.set(0, 6, 0);
+    scene.add(lights.hemi);
+
+    lights.key = new THREE.DirectionalLight(0xffffff, 1.15);
+    lights.key.position.set(3.6, 6.0, 2.6);
+    lights.key.castShadow = true;
+    lights.key.shadow.mapSize.set(2048,2048);
+    lights.key.shadow.camera.near = 0.1;
+    lights.key.shadow.camera.far = 20;
+    lights.key.shadow.camera.left = -6;
+    lights.key.shadow.camera.right = 6;
+    lights.key.shadow.camera.top = 6;
+    lights.key.shadow.camera.bottom = -6;
+    lights.key.shadow.bias = -0.00015;
+    lights.key.shadow.normalBias = 0.01;
+    lights.key.shadow.radius = 2.2;
+    lights.key.shadow.blurSamples = 8;
+    scene.add(lights.key);
+
+    lights.fill = new THREE.DirectionalLight(0xe7f0ff, 0.45);
+    lights.fill.position.set(-4.5, 3.0, 2.5);
+    lights.fill.castShadow = true;
+    lights.fill.shadow.mapSize.set(1024,1024);
+    lights.fill.shadow.bias = -0.0001;
+    lights.fill.shadow.normalBias = 0.01;
+    scene.add(lights.fill);
+
+    lights.back = new THREE.DirectionalLight(0xffffff, 0.30);
+    lights.back.position.set(0.0, 3.0, -5.0);
+    scene.add(lights.back);
+
+    buildRoom();
+    buildRails();
+    buildStringers();
+
+    controls = makeMiniControls(camera, canvas, {
+      target: new THREE.Vector3(0, ((mm(DEFAULTS.roomH) - mm(200)) - mm(45)) - mm(80), 0),
+      minDistance: 0.8,
+      maxDistance: 15,
+      rotateSpeed: 0.82,
+      zoomSpeed: 0.78,
+      panSpeed: 0.72,
+      damping: 0.18,
+    });
+    resetCamera();
+
+    const s = parseQuery();
+    applyState(s, true);
+    syncInputs();
+    rebuildAll();
+    applyLights();
+    applyMaterials();
+    resetCamera();
+
+    setStatus(true, "Готово");
+    hideOverlay();
+    requestAnimationFrame(tick);
+
+  }catch(err){
+    setStatus(false, "Ошибка 3D");
+    setOverlay("error", `
+      <b>Не удалось запустить 3D</b><br>
+      Ошибка: <span style="color:#991b1b">${(err && err.message) ? err.message : String(err)}</span>
+      <br><br>
+      <b>Офлайн:</b> скачай <b>three.min.js</b> и положи рядом с html, затем включи <b>LOCAL_LIBS = true</b>.
+    `);
+    log("FATAL: " + String(err && err.stack ? err.stack : err));
+    showOverlay();
+  }
+}
+
+function tick(t){
+  resize();
+  controls?.update?.();
+  updateWallTransparency();
+  renderer.render(scene, camera);
+
+  frames++;
+  if(t - lastFrameT >= 1000){
+    fps = Math.round(frames * 1000 / (t - lastFrameT));
+    frames = 0;
+    lastFrameT = t;
+    ui.fpsPill.textContent = `FPS: ${fps}`;
+  }
+  requestAnimationFrame(tick);
+}
+
+function start(){
+  try{
+    setStatus(true, "Подготовка…");
+    showOverlay();
+    initThree();
+  }catch(e){
+    log("Start error: " + String(e));
+    setOverlay("error", "Старт упал: " + String(e));
+  }
+}
+
+bindInputs();
+applyState(parseQuery(), true);
+syncInputs();
+buildSpec();
+start();
+</script>
+
+</body>
+</html>
